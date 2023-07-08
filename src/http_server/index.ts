@@ -9,8 +9,8 @@ const webSocketServer = new WebSocketServer({ port: 3000 });
 webSocketServer.on('connection', (socket) => {
   console.log('New connection opened');
   socket.on('message', (message) => {
-    console.log(JSON.parse(message));
-    socket.send(JSON.stringify(JSON.parse(message)));
+    console.log(JSON.parse(message.toString()));
+    socket.send(JSON.stringify(JSON.parse(message.toString())));
   });
   socket.on('close', () => console.log('Connection closed'));
 });
