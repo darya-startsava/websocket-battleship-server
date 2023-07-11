@@ -2,19 +2,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as http from 'http';
 
-import { WebSocketServer } from 'ws';
-
-const webSocketServer = new WebSocketServer({ port: 3000 });
-
-webSocketServer.on('connection', (socket) => {
-  console.log('New connection opened');
-  socket.on('message', (message) => {
-    console.log(JSON.parse(message.toString()));
-    socket.send(JSON.stringify(JSON.parse(message.toString())));
-  });
-  socket.on('close', () => console.log('Connection closed'));
-});
-
 export const httpServer = http.createServer(function (req, res) {
   const __dirname = path.resolve(path.dirname(''));
   const file_path =
