@@ -1,6 +1,6 @@
-import StorageType from '../types/storage';
+import { StorageRoomsType } from '../types/storage';
 
-export default function updateRoom(storage: StorageType[]) {
+export default function updateRoom(storage: StorageRoomsType[]) {
   console.log('response', {
     type: 'update_room',
     data: JSON.stringify(storage),

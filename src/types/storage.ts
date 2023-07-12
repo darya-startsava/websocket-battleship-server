@@ -3,9 +3,14 @@ type RoomUsersStorageType = {
   index: number;
 };
 
-type StorageType = {
+type StorageRoomsType = {
   roomId: number;
   roomUsers: RoomUsersStorageType[];
 };
 
-export default StorageType;
+type StorageWinnersType = {
+  name: string;
+  wins: number;
+};
+
+export { StorageRoomsType, StorageWinnersType };

@@ -1,12 +1,13 @@
 import { WebSocketServer } from 'ws';
 import { WS_PORT } from '../constants';
-import StorageType from '../types/storage';
+import { StorageRoomsType, StorageWinnersType } from '../types/storage';
 import reg from '../utils/reg';
 import updateRoom from '../utils/updateRoom';
+import updateWinners from '../utils/updateWinners';
 
 const webSocketServer = new WebSocketServer({ port: WS_PORT });
 
-const webSocketServerStorage: StorageType[] = [
+const webSocketServerStorageRooms: StorageRoomsType[] = [
   // clear webSocketServerStorage
   {
     roomId: 1,
@@ -19,6 +20,14 @@ const webSocketServerStorage: StorageType[] = [
   },
 ];
 
+const webSocketServerStorageWinners: StorageWinnersType[] = [
+  // clear webSocketServerStorage
+  {
+    name: 'Winner!',
+    wins: 2,
+  },
+];
+
 webSocketServer.on('connection', (socket) => {
   console.log('New connection opened');
 
@@ -28,8 +37,10 @@ webSocketServer.on('connection', (socket) => {
       case 'reg': {
         const responseMessage = reg(message);
         socket.send(JSON.stringify(responseMessage));
-        const updateRoomResponse = updateRoom(webSocketServerStorage);
+        const updateRoomResponse = updateRoom(webSocketServerStorageRooms);
         socket.send(JSON.stringify(updateRoomResponse));
+        const updateWinnersResponse = updateWinners(webSocketServerStorageWinners);
+        socket.send(JSON.stringify(updateWinnersResponse));
         break;
       }
       case 'create_room': {
