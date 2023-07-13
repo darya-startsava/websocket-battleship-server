@@ -10,7 +10,7 @@ const webSocketServer = new WebSocketServer({ port: WS_PORT });
 const webSocketServerStorageRooms: StorageRoomsType[] = [
   // clear webSocketServerStorage
   {
-    roomId: 1,
+    roomId: 0,
     roomUsers: [
       {
         name: 'testUser',
@@ -28,11 +28,15 @@ const webSocketServerStorageWinners: StorageWinnersType[] = [
   },
 ];
 
+let userName = '';
+
 webSocketServer.on('connection', (socket) => {
   console.log('New connection opened');
-
   socket.on('message', (message) => {
     const messageType = JSON.parse(message.toString()).type;
+    if (messageType === 'reg') {
+      userName = JSON.parse(JSON.parse(message.toString()).data).name;
+    }
     switch (messageType) {
       case 'reg': {
         const responseMessage = reg(message);
@@ -45,7 +49,26 @@ webSocketServer.on('connection', (socket) => {
       }
       case 'create_room': {
         console.log(JSON.parse(message.toString()));
-        socket.send(JSON.stringify(JSON.parse(message.toString())));
+        let isNewRoomAlreadyCreated = false;
+        webSocketServerStorageRooms.forEach((room) => {
+          if (room.roomUsers[0].name === userName) {
+            isNewRoomAlreadyCreated = true;
+          }
+        });
+        if (!isNewRoomAlreadyCreated) {
+          webSocketServerStorageRooms.push({
+            roomId: webSocketServerStorageRooms.length,
+            roomUsers: [
+              {
+                name: userName,
+                index: 0,
+              },
+            ],
+          });
+          const updateRoomResponse = updateRoom(webSocketServerStorageRooms);
+          socket.send(JSON.stringify(updateRoomResponse));
+        }
+        break;
       }
     }
   });
