@@ -1,7 +1,11 @@
-import { WebSocketServer } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws';
 import { WS_PORT } from '../constants';
 import { StorageRoomsType, StorageWinnersType } from '../types/storage';
+import createGame, { getNewIdGame } from '../utils/createGame';
+import getPlayerInRoomName from '../utils/getPlayerInRoomName';
+import getRoomIndex from '../utils/getRoomIndex';
 import reg from '../utils/reg';
+import removeRoomFromList from '../utils/removeRoomFromList';
 import updateRoom from '../utils/updateRoom';
 import updateWinners from '../utils/updateWinners';
 
@@ -28,23 +32,32 @@ const webSocketServerStorageWinners: StorageWinnersType[] = [
   },
 ];
 
-let userName = '';
+const userSocketMap = new Map<string, WebSocket>();
+
+const webSocketServerStorageGames: number[] = [];
+
+const sockets = new Set<WebSocket>();
 
 webSocketServer.on('connection', (socket) => {
+  sockets.add(socket);
   console.log('New connection opened');
+  let userName = '';
   socket.on('message', (message) => {
     const messageType = JSON.parse(message.toString()).type;
     if (messageType === 'reg') {
       userName = JSON.parse(JSON.parse(message.toString()).data).name;
+      userSocketMap.set(userName, socket);
     }
     switch (messageType) {
       case 'reg': {
         const responseMessage = reg(message);
         socket.send(JSON.stringify(responseMessage));
         const updateRoomResponse = updateRoom(webSocketServerStorageRooms);
-        socket.send(JSON.stringify(updateRoomResponse));
+        sockets.forEach((socket) => socket.send(JSON.stringify(updateRoomResponse)));
         const updateWinnersResponse = updateWinners(webSocketServerStorageWinners);
-        socket.send(JSON.stringify(updateWinnersResponse));
+        sockets.forEach((socket) =>
+          socket.send(JSON.stringify(updateWinnersResponse))
+        );
         break;
       }
       case 'create_room': {
@@ -66,8 +79,33 @@ webSocketServer.on('connection', (socket) => {
             ],
           });
           const updateRoomResponse = updateRoom(webSocketServerStorageRooms);
-          socket.send(JSON.stringify(updateRoomResponse));
+          sockets.forEach((socket) =>
+            socket.send(JSON.stringify(updateRoomResponse))
+          );
         }
+        break;
+      }
+      case 'add_user_to_room': {
+        const roomIndex = getRoomIndex(message);
+        const firstPlayerInRoom = getPlayerInRoomName(
+          webSocketServerStorageRooms,
+          roomIndex
+        );
+        console.log(firstPlayerInRoom, userName);
+        if (firstPlayerInRoom === userName) {
+          break;
+        }
+        removeRoomFromList(webSocketServerStorageRooms, roomIndex);
+        const updateRoomResponse = updateRoom(webSocketServerStorageRooms);
+        sockets.forEach((socket) => socket.send(JSON.stringify(updateRoomResponse)));
+        const idGame = getNewIdGame(webSocketServerStorageGames);
+        const firstPlayerInRoomResponse = createGame(idGame, 0);
+        userSocketMap
+          .get(firstPlayerInRoom)
+          .send(JSON.stringify(firstPlayerInRoomResponse));
+        const secondPlayerInRoomResponse = createGame(idGame, 1);
+        userSocketMap.get(userName).send(JSON.stringify(secondPlayerInRoomResponse));
+
         break;
       }
     }
