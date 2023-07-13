@@ -12,16 +12,6 @@ import updateWinners from '../utils/updateWinners';
 const webSocketServer = new WebSocketServer({ port: WS_PORT });
 
 const webSocketServerStorageRooms: StorageRoomsType[] = [
-  // clear webSocketServerStorage
-  {
-    roomId: 0,
-    roomUsers: [
-      {
-        name: 'testUser',
-        index: 0,
-      },
-    ],
-  },
 ];
 
 const webSocketServerStorageWinners: StorageWinnersType[] = [
@@ -48,6 +38,7 @@ webSocketServer.on('connection', (socket) => {
       userName = JSON.parse(JSON.parse(message.toString()).data).name;
       userSocketMap.set(userName, socket);
     }
+    console.log('request:', messageType);
     switch (messageType) {
       case 'reg': {
         const responseMessage = reg(message);
@@ -61,7 +52,6 @@ webSocketServer.on('connection', (socket) => {
         break;
       }
       case 'create_room': {
-        console.log(JSON.parse(message.toString()));
         let isNewRoomAlreadyCreated = false;
         webSocketServerStorageRooms.forEach((room) => {
           if (room.roomUsers[0].name === userName) {
@@ -91,7 +81,6 @@ webSocketServer.on('connection', (socket) => {
           webSocketServerStorageRooms,
           roomIndex
         );
-        console.log(firstPlayerInRoom, userName);
         if (firstPlayerInRoom === userName) {
           break;
         }

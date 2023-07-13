@@ -34,9 +34,8 @@ export default function reg(message: RawData) {
   };
   const parsedMessage = JSON.parse(message.toString());
   const data = JSON.parse(parsedMessage.data);
-  console.log('request:', { ...parsedMessage, data });
   auth(data, userRegResponseData);
-  console.log('response', { ...parsedMessage, data: userRegResponseData });
+  console.log('response:', parsedMessage.type);
   return { ...parsedMessage, data: JSON.stringify(userRegResponseData) };
 }
 

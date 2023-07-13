@@ -13,6 +13,7 @@ export function getNewIdGame(storage: number[]) {
 }
 
 export default function createGame(idGame: number, idPlayer: number) {
+  console.log('response:', 'create_game');
   const data = {
     idGame,
     idPlayer,
