@@ -13,4 +13,29 @@ type StorageWinnersType = {
   wins: number;
 };
 
-export { StorageRoomsType, StorageWinnersType };
+enum ShipSize {
+  S = 'small',
+  M = 'medium',
+  L = 'large',
+  H = 'huge',
+}
+
+type ShipsType = {
+  position: {
+    x: number;
+    y: number;
+  };
+  direction: boolean;
+  length: number;
+  type: ShipSize;
+};
+
+type StorageGameType = {
+  gameId: number;
+  firstPlayerName: string;
+  secondPlayerName: string;
+  firstPlayerShips: ShipsType[];
+  secondPlayerShips: ShipsType[];
+};
+
+export { StorageRoomsType, StorageWinnersType, StorageGameType, ShipsType };
