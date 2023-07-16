@@ -48,11 +48,12 @@ type StorageGameType = {
   secondPlayerName: string;
   firstPlayerShips: ShipsType[];
   secondPlayerShips: ShipsType[];
-  firstPlayerShipsMatrix: Array<[number]>;
-  secondPlayerShipsMatrix: Array<[number]>;
+  firstPlayerShipsMatrix: Array<[Array<[number, number]>]>;
+  secondPlayerShipsMatrix: Array<[Array<[number, number]>]>;
   currentPlayerIndex: number;
   firstPlayerShots: Array<[number | ShotStatusType]>;
   secondPlayerShots: Array<[number | ShotStatusType]>;
+  temporaryAttackResults: ShotsType[];
 };
 
 export { StorageRoomsType, StorageWinnersType, StorageGameType, ShipsType };

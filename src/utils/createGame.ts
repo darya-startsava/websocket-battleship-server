@@ -17,6 +17,7 @@ export function getNewIdGame(storage: StorageGameType[]) {
         currentPlayerIndex: 0,
         firstPlayerShots: [],
         secondPlayerShots: [],
+        temporaryAttackResults: [],
       });
       idGame = i;
       break;

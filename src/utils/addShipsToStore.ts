@@ -24,17 +24,27 @@ export default function addShipsToStore(message: RawData, store: StorageGameType
 }
 
 function transformToMatrix(ships: ShipsType[]) {
-  const matrix = createMatrix();
+  const matrix: Array<[Array<[number, number]>]> = [];
+  for (let i = 0; i < 10; i++) {
+    matrix[i] = [[]];
+    for (let j = 0; j < 10; j++) {
+      matrix[i][j] = [];
+    }
+  }
   ships.forEach((ship) => {
     const { position, direction, length } = ship;
     const { x, y } = position;
     if (direction) {
+      const array: Array<[number, number]> = [];
       for (let i = y; i < y + length; i++) {
-        matrix[i][x] = 1;
+        array.push([i, x]);
+        matrix[i][x] = array;
       }
     } else {
+      const array: Array<[number, number]> = [];
       for (let i = x; i < x + length; i++) {
-        matrix[y][i] = 1;
+        array.push([y, i]);
+        matrix[y][i] = array;
       }
     }
   });

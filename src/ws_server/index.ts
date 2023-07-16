@@ -4,9 +4,12 @@ import {
   StorageRoomsType,
   StorageWinnersType,
   StorageGameType,
+  ShotStatusType,
 } from '../types/storage';
 import addShipsToStore from '../utils/addShipsToStore';
-import getAttackResponse from '../utils/getAttackResponse';
+import getAttackResponse, {
+  getAdditionalResponsesIfKilled,
+} from '../utils/getAttackResponse';
 import createGame, {
   addUsersNameToGameStorage,
   getNewIdGame,
@@ -154,16 +157,27 @@ webSocketServer.on('connection', (socket) => {
             message,
             webSocketServerStorageGames
           );
+          console.log('result:', result);
+          const firstPlayerName = webSocketServerStorageGames.find(
+            (game) => game.gameId === gameId
+          ).firstPlayerName;
+          const secondPlayerName = webSocketServerStorageGames.find(
+            (game) => game.gameId === gameId
+          ).secondPlayerName;
           if (result) {
             const attackResponse = getAttackResponse(message, result);
-            const firstPlayerName = webSocketServerStorageGames.find(
-              (game) => game.gameId === gameId
-            ).firstPlayerName;
             userSocketMap.get(firstPlayerName).send(JSON.stringify(attackResponse));
-            const secondPlayerName = webSocketServerStorageGames.find(
-              (game) => game.gameId === gameId
-            ).secondPlayerName;
             userSocketMap.get(secondPlayerName).send(JSON.stringify(attackResponse));
+          }
+          if (result === ShotStatusType.killed) {
+            const responses = getAdditionalResponsesIfKilled(
+              message,
+              webSocketServerStorageGames
+            );
+            responses.forEach((response) => {
+              userSocketMap.get(firstPlayerName).send(JSON.stringify(response));
+              userSocketMap.get(secondPlayerName).send(JSON.stringify(response));
+            });
           }
         }
         break;
