@@ -6,6 +6,7 @@ import {
   StorageGameType,
 } from '../types/storage';
 import addShipsToStore from '../utils/addShipsToStore';
+import getAttackResponse from '../utils/getAttackResponse';
 import createGame, {
   addUsersNameToGameStorage,
   getNewIdGame,
@@ -15,6 +16,8 @@ import getRoomIndex from '../utils/getRoomIndex';
 import reg from '../utils/reg';
 import removeRoomFromList from '../utils/removeRoomFromList';
 import startGame from '../utils/startGame';
+import turnResponse from '../utils/turnResponse';
+import updateGameStorageAfterAttack from '../utils/updateGameStorageAfterAttack';
 import updateRoom from '../utils/updateRoom';
 import updateWinners from '../utils/updateWinners';
 
@@ -139,7 +142,31 @@ webSocketServer.on('connection', (socket) => {
           userSocketMap
             .get(secondPlayerName)
             .send(JSON.stringify(secondPlayerInRoomResponse));
+          const turn = turnResponse(webSocketServerStorageGames, gameId);
+          userSocketMap.get(firstPlayerName).send(JSON.stringify(turn));
+          userSocketMap.get(secondPlayerName).send(JSON.stringify(turn));
         }
+        break;
+      case 'attack':
+        {
+          const gameId = JSON.parse(JSON.parse(message.toString()).data).gameId;
+          const result = updateGameStorageAfterAttack(
+            message,
+            webSocketServerStorageGames
+          );
+          if (result) {
+            const attackResponse = getAttackResponse(message, result);
+            const firstPlayerName = webSocketServerStorageGames.find(
+              (game) => game.gameId === gameId
+            ).firstPlayerName;
+            userSocketMap.get(firstPlayerName).send(JSON.stringify(attackResponse));
+            const secondPlayerName = webSocketServerStorageGames.find(
+              (game) => game.gameId === gameId
+            ).secondPlayerName;
+            userSocketMap.get(secondPlayerName).send(JSON.stringify(attackResponse));
+          }
+        }
+        break;
     }
   });
   socket.on('close', () => console.log('Connection closed'));

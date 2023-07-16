@@ -12,6 +12,11 @@ export function getNewIdGame(storage: StorageGameType[]) {
         secondPlayerName: '',
         firstPlayerShips: [],
         secondPlayerShips: [],
+        firstPlayerShipsMatrix: [],
+        secondPlayerShipsMatrix: [],
+        currentPlayerIndex: 0,
+        firstPlayerShots: [],
+        secondPlayerShots: [],
       });
       idGame = i;
       break;

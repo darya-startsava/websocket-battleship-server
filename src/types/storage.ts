@@ -30,12 +30,29 @@ type ShipsType = {
   type: ShipSize;
 };
 
+export enum ShotStatusType {
+  miss = 'miss',
+  killed = 'killed',
+  shot = 'shot',
+}
+
+export type ShotsType = {
+  x: number;
+  y: number;
+  status: ShotStatusType;
+};
+
 type StorageGameType = {
   gameId: number;
   firstPlayerName: string;
   secondPlayerName: string;
   firstPlayerShips: ShipsType[];
   secondPlayerShips: ShipsType[];
+  firstPlayerShipsMatrix: Array<[number]>;
+  secondPlayerShipsMatrix: Array<[number]>;
+  currentPlayerIndex: number;
+  firstPlayerShots: Array<[number | ShotStatusType]>;
+  secondPlayerShots: Array<[number | ShotStatusType]>;
 };
 
 export { StorageRoomsType, StorageWinnersType, StorageGameType, ShipsType };
