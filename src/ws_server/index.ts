@@ -152,7 +152,16 @@ webSocketServer.on('connection', (socket) => {
         break;
       case 'attack':
         {
-          const gameId = JSON.parse(JSON.parse(message.toString()).data).gameId;
+          const { gameId, indexPlayer } = JSON.parse(
+            JSON.parse(message.toString()).data
+          );
+          if (
+            webSocketServerStorageGames.find((game) => game.gameId === gameId)
+              .currentPlayerIndex !== indexPlayer
+          ) {
+            console.log("it's not this player turn");
+            break;
+          }
           const result = updateGameStorageAfterAttack(
             message,
             webSocketServerStorageGames
