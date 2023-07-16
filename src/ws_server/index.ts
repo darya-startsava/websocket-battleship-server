@@ -23,6 +23,7 @@ import turnResponse from '../utils/turnResponse';
 import updateGameStorageAfterAttack from '../utils/updateGameStorageAfterAttack';
 import updateRoom from '../utils/updateRoom';
 import updateWinners from '../utils/updateWinners';
+import { checkIfGameIsFinished, getFinishGameResponse } from '../utils/finishGame';
 
 const webSocketServer = new WebSocketServer({ port: WS_PORT });
 
@@ -150,46 +151,67 @@ webSocketServer.on('connection', (socket) => {
           userSocketMap.get(secondPlayerName).send(JSON.stringify(turn));
         }
         break;
-      case 'attack':
-        {
-          const { gameId, indexPlayer } = JSON.parse(
-            JSON.parse(message.toString()).data
-          );
-          if (
-            webSocketServerStorageGames.find((game) => game.gameId === gameId)
-              .currentPlayerIndex !== indexPlayer
-          ) {
-            console.log("it's not this player turn");
-            break;
-          }
-          const result = updateGameStorageAfterAttack(
+      case 'attack': {
+        const { gameId, indexPlayer } = JSON.parse(
+          JSON.parse(message.toString()).data
+        );
+        const game = webSocketServerStorageGames.find(
+          (game) => game.gameId === gameId
+        );
+        if (game.currentPlayerIndex !== indexPlayer) {
+          console.log("it's not this player turn");
+          break;
+        }
+        const result = updateGameStorageAfterAttack(
+          message,
+          webSocketServerStorageGames
+        );
+        console.log('result:', result);
+        const firstPlayerName = game.firstPlayerName;
+        const secondPlayerName = game.secondPlayerName;
+        if (result) {
+          const attackResponse = getAttackResponse(message, result);
+          userSocketMap.get(firstPlayerName).send(JSON.stringify(attackResponse));
+          userSocketMap.get(secondPlayerName).send(JSON.stringify(attackResponse));
+        }
+        if (result === ShotStatusType.killed) {
+          const responses = getAdditionalResponsesIfKilled(
             message,
             webSocketServerStorageGames
           );
-          console.log('result:', result);
-          const firstPlayerName = webSocketServerStorageGames.find(
-            (game) => game.gameId === gameId
-          ).firstPlayerName;
-          const secondPlayerName = webSocketServerStorageGames.find(
-            (game) => game.gameId === gameId
-          ).secondPlayerName;
-          if (result) {
-            const attackResponse = getAttackResponse(message, result);
-            userSocketMap.get(firstPlayerName).send(JSON.stringify(attackResponse));
-            userSocketMap.get(secondPlayerName).send(JSON.stringify(attackResponse));
-          }
-          if (result === ShotStatusType.killed) {
-            const responses = getAdditionalResponsesIfKilled(
-              message,
-              webSocketServerStorageGames
+          responses.forEach((response) => {
+            userSocketMap.get(firstPlayerName).send(JSON.stringify(response));
+            userSocketMap.get(secondPlayerName).send(JSON.stringify(response));
+          });
+          const winnerName = checkIfGameIsFinished(
+            webSocketServerStorageGames,
+            gameId
+          );
+          if (winnerName) {
+            const finishGameResponse = getFinishGameResponse(
+              webSocketServerStorageGames,
+              gameId
             );
-            responses.forEach((response) => {
-              userSocketMap.get(firstPlayerName).send(JSON.stringify(response));
-              userSocketMap.get(secondPlayerName).send(JSON.stringify(response));
-            });
+            userSocketMap
+              .get(firstPlayerName)
+              .send(JSON.stringify(finishGameResponse));
+            userSocketMap
+              .get(secondPlayerName)
+              .send(JSON.stringify(finishGameResponse));
           }
         }
+        if (result === ShotStatusType.miss) {
+          if (game.currentPlayerIndex) {
+            game.currentPlayerIndex = 0;
+          } else {
+            game.currentPlayerIndex = 1;
+          }
+        }
+        const turn = turnResponse(webSocketServerStorageGames, gameId);
+        userSocketMap.get(firstPlayerName).send(JSON.stringify(turn));
+        userSocketMap.get(secondPlayerName).send(JSON.stringify(turn));
         break;
+      }
     }
   });
   socket.on('close', () => console.log('Connection closed'));

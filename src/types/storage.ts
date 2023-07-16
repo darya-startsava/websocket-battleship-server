@@ -53,6 +53,8 @@ type StorageGameType = {
   currentPlayerIndex: number;
   firstPlayerShots: Array<[number | ShotStatusType]>;
   secondPlayerShots: Array<[number | ShotStatusType]>;
+  firstPlayerKilledShipsCounter: number;
+  secondPlayerKilledShipsCounter: number;
   temporaryAttackResults: ShotsType[];
 };
 

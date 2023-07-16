@@ -19,6 +19,9 @@ export default function updateGameStorageAfterAttack(
         game.temporaryAttackResults
       );
       game.secondPlayerShots[y][x] = result;
+      if (result === ShotStatusType.killed) {
+        game.secondPlayerKilledShipsCounter++;
+      }
       return result;
     }
   } else {
@@ -31,6 +34,9 @@ export default function updateGameStorageAfterAttack(
         game.temporaryAttackResults
       );
       game.firstPlayerShots[y][x] = result;
+      if (result === ShotStatusType.killed) {
+        game.firstPlayerKilledShipsCounter++;
+      }
       return result;
     }
   }

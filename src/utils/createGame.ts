@@ -18,6 +18,8 @@ export function getNewIdGame(storage: StorageGameType[]) {
         firstPlayerShots: [],
         secondPlayerShots: [],
         temporaryAttackResults: [],
+        firstPlayerKilledShipsCounter: 0,
+        secondPlayerKilledShipsCounter: 0,
       });
       idGame = i;
       break;
