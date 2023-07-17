@@ -8,6 +8,7 @@ import {
 } from '../types/storage';
 import addShipsToStore from '../utils/addShipsToStore';
 import getAttackResponse, {
+  addAdditionalAttackResultsToStorage,
   getAdditionalResponsesIfKilled,
 } from '../utils/getAttackResponse';
 import createGame, {
@@ -24,7 +25,7 @@ import updateGameStorageAfterAttack from '../utils/updateGameStorageAfterAttack'
 import updateRoom from '../utils/updateRoom';
 import updateWinners, { updateWinnersStorage } from '../utils/updateWinners';
 import { checkIfGameIsFinished, getFinishGameResponse } from '../utils/finishGame';
-import { getRandomPosition } from '../utils/randomAttack';
+import randomAttack from '../utils/randomAttack';
 
 const webSocketServer = new WebSocketServer({ port: WS_PORT });
 
@@ -58,6 +59,7 @@ webSocketServer.on('connection', (socket) => {
       userSocketMap.get(secondPlayerName).send(JSON.stringify(attackResponse));
     }
     if (result === ShotStatusType.killed) {
+      addAdditionalAttackResultsToStorage(indexPlayer, game);
       const responses = getAdditionalResponsesIfKilled(indexPlayer, game);
       responses.forEach((response) => {
         userSocketMap.get(firstPlayerName).send(JSON.stringify(response));
@@ -214,7 +216,7 @@ webSocketServer.on('connection', (socket) => {
         const game = webSocketServerStorageGames.find(
           (game) => game.gameId === gameId
         );
-        const [x, y] = getRandomPosition();
+        const [x, y] = randomAttack(game, indexPlayer);
         attackResponse(x, y, indexPlayer, game);
         break;
       }

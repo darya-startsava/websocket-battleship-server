@@ -77,11 +77,6 @@ function checkShotResult(
     ) {
       if (i >= 0 && i < 10 && j >= 0 && j < 10) {
         if (shots[j][i] !== ShotStatusType.killed) {
-          console.log({
-            x: i,
-            y: j,
-            status: ShotStatusType.miss,
-          });
           temporaryAttackResults.push({
             x: i,
             y: j,
@@ -104,11 +99,6 @@ function checkShotResult(
     ) {
       if (i >= 0 && i < 10 && j >= 0 && j < 10) {
         if (shots[j][i] !== ShotStatusType.killed) {
-          console.log({
-            x: i,
-            y: j,
-            status: ShotStatusType.miss,
-          });
           temporaryAttackResults.push({
             x: i,
             y: j,

@@ -41,3 +41,19 @@ export function getAdditionalResponsesIfKilled(
   );
   return responses;
 }
+
+export function addAdditionalAttackResultsToStorage(
+  indexPlayer: number,
+  game: StorageGameType
+) {
+  const { temporaryAttackResults, firstPlayerShots, secondPlayerShots } = game;
+  if (indexPlayer) {
+    temporaryAttackResults.forEach((i) => {
+      secondPlayerShots[i.y][i.x] = i.status;
+    });
+  } else {
+    temporaryAttackResults.forEach((i) => {
+      firstPlayerShots[i.y][i.x] = i.status;
+    });
+  }
+}
