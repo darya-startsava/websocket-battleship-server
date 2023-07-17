@@ -24,7 +24,7 @@ import updateGameStorageAfterAttack from '../utils/updateGameStorageAfterAttack'
 import updateRoom from '../utils/updateRoom';
 import updateWinners, { updateWinnersStorage } from '../utils/updateWinners';
 import { checkIfGameIsFinished, getFinishGameResponse } from '../utils/finishGame';
-import { randomAttack } from '../utils/randomAttack';
+import { getRandomPosition } from '../utils/randomAttack';
 
 const webSocketServer = new WebSocketServer({ port: WS_PORT });
 
@@ -41,6 +41,54 @@ const sockets = new Set<WebSocket>();
 webSocketServer.on('connection', (socket) => {
   sockets.add(socket);
   console.log('New connection opened');
+
+  function attackResponse(
+    x: number,
+    y: number,
+    indexPlayer: number,
+    game: StorageGameType
+  ) {
+    const result = updateGameStorageAfterAttack(x, y, indexPlayer, game);
+    console.log('result:', result);
+    const firstPlayerName = game.firstPlayerName;
+    const secondPlayerName = game.secondPlayerName;
+    if (result) {
+      const attackResponse = getAttackResponse(x, y, indexPlayer, result);
+      userSocketMap.get(firstPlayerName).send(JSON.stringify(attackResponse));
+      userSocketMap.get(secondPlayerName).send(JSON.stringify(attackResponse));
+    }
+    if (result === ShotStatusType.killed) {
+      const responses = getAdditionalResponsesIfKilled(indexPlayer, game);
+      responses.forEach((response) => {
+        userSocketMap.get(firstPlayerName).send(JSON.stringify(response));
+        userSocketMap.get(secondPlayerName).send(JSON.stringify(response));
+      });
+      const winnerName = checkIfGameIsFinished(game);
+      if (winnerName) {
+        const finishGameResponse = getFinishGameResponse(game);
+        console.log('winner:', winnerName);
+        userSocketMap.get(firstPlayerName).send(JSON.stringify(finishGameResponse));
+        userSocketMap.get(secondPlayerName).send(JSON.stringify(finishGameResponse));
+        updateWinnersStorage(webSocketServerStorageWinners, winnerName);
+        const updateWinnersResponse = updateWinners(webSocketServerStorageWinners);
+        sockets.forEach((socket) =>
+          socket.send(JSON.stringify(updateWinnersResponse))
+        );
+        return;
+      }
+    }
+    if (result === ShotStatusType.miss) {
+      if (game.currentPlayerIndex) {
+        game.currentPlayerIndex = 0;
+      } else {
+        game.currentPlayerIndex = 1;
+      }
+    }
+    const turn = turnResponse(game);
+    userSocketMap.get(firstPlayerName).send(JSON.stringify(turn));
+    userSocketMap.get(secondPlayerName).send(JSON.stringify(turn));
+  }
+
   let userName = '';
   socket.on('message', (message) => {
     const messageType = JSON.parse(message.toString()).type;
@@ -156,51 +204,7 @@ webSocketServer.on('connection', (socket) => {
           console.log("it's not this player turn");
           break;
         }
-        const result = updateGameStorageAfterAttack(x, y, indexPlayer, game);
-        console.log('result:', result);
-        const firstPlayerName = game.firstPlayerName;
-        const secondPlayerName = game.secondPlayerName;
-        if (result) {
-          const attackResponse = getAttackResponse(x, y, indexPlayer, result);
-          userSocketMap.get(firstPlayerName).send(JSON.stringify(attackResponse));
-          userSocketMap.get(secondPlayerName).send(JSON.stringify(attackResponse));
-        }
-        if (result === ShotStatusType.killed) {
-          const responses = getAdditionalResponsesIfKilled(indexPlayer, game);
-          responses.forEach((response) => {
-            userSocketMap.get(firstPlayerName).send(JSON.stringify(response));
-            userSocketMap.get(secondPlayerName).send(JSON.stringify(response));
-          });
-          const winnerName = checkIfGameIsFinished(game);
-          if (winnerName) {
-            const finishGameResponse = getFinishGameResponse(game);
-            console.log('winner:', winnerName);
-            userSocketMap
-              .get(firstPlayerName)
-              .send(JSON.stringify(finishGameResponse));
-            userSocketMap
-              .get(secondPlayerName)
-              .send(JSON.stringify(finishGameResponse));
-            updateWinnersStorage(webSocketServerStorageWinners, winnerName);
-            const updateWinnersResponse = updateWinners(
-              webSocketServerStorageWinners
-            );
-            sockets.forEach((socket) =>
-              socket.send(JSON.stringify(updateWinnersResponse))
-            );
-            break;
-          }
-        }
-        if (result === ShotStatusType.miss) {
-          if (game.currentPlayerIndex) {
-            game.currentPlayerIndex = 0;
-          } else {
-            game.currentPlayerIndex = 1;
-          }
-        }
-        const turn = turnResponse(game);
-        userSocketMap.get(firstPlayerName).send(JSON.stringify(turn));
-        userSocketMap.get(secondPlayerName).send(JSON.stringify(turn));
+        attackResponse(x, y, indexPlayer, game);
         break;
       }
       case 'randomAttack': {
@@ -210,15 +214,8 @@ webSocketServer.on('connection', (socket) => {
         const game = webSocketServerStorageGames.find(
           (game) => game.gameId === gameId
         );
-        const firstPlayerName = game.firstPlayerName;
-        const secondPlayerName = game.secondPlayerName;
-        const randomAttackResponse = randomAttack(game, indexPlayer);
-        userSocketMap
-          .get(firstPlayerName)
-          .send(JSON.stringify(randomAttackResponse));
-        userSocketMap
-          .get(secondPlayerName)
-          .send(JSON.stringify(randomAttackResponse));
+        const [x, y] = getRandomPosition();
+        attackResponse(x, y, indexPlayer, game);
         break;
       }
     }
