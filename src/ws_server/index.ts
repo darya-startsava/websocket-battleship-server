@@ -29,6 +29,7 @@ import updateWinners, { updateWinnersStorage } from '../utils/updateWinners';
 import { checkIfGameIsFinished, getFinishGameResponse } from '../utils/finishGame';
 import randomAttack from '../utils/randomAttack';
 import getRandomBotShips from '../botShipsArray';
+import dataBase from '../dataBase';
 
 const webSocketServer = new WebSocketServer({ port: WS_PORT });
 
@@ -326,5 +327,23 @@ webSocketServer.on('connection', (socket) => {
       }
     }
   });
-  socket.on('close', () => console.log('Connection closed'));
+  socket.on('close', () => {
+    let userName = '';
+    sockets.delete(socket);
+    userSocketMap.forEach((value, key) => {
+      if (value === socket) {
+        userName = key;
+        userSocketMap.delete(key);
+      }
+    });
+    dataBase.forEach((user, index) => {
+      if (user.name === userName) {
+        dataBase.splice(index, 1);
+      }
+    });
+    removeRoomFromListIfUserJoinAnotherGame(webSocketServerStorageRooms, userName);
+    const updateRoomResponse = updateRoom(webSocketServerStorageRooms);
+    sockets.forEach((socket) => socket.send(JSON.stringify(updateRoomResponse)));
+    console.log('Connection closed');
+  });
 });

@@ -1,17 +1,6 @@
 import { RawData } from 'ws';
 
-type UserRegRequest = {
-  type: string;
-  data: UserAuthData;
-  id: number;
-};
 import dataBase from '../dataBase';
-
-type UserRegResponse = {
-  type: string;
-  data: UserRegResponseData;
-  id: number;
-};
 
 type UserRegResponseData = {
   name: string;
