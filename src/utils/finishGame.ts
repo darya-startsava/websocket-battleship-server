@@ -1,8 +1,7 @@
 import { StorageGameType } from '../types/storage';
 
-export function getFinishGameResponse(storage: StorageGameType[], gameId: number) {
+export function getFinishGameResponse(game: StorageGameType) {
   console.log('response:', 'finish');
-  const game = storage.find((game) => game.gameId === gameId);
   const data = {
     winPlayer: game.currentPlayerIndex,
   };
@@ -13,9 +12,8 @@ export function getFinishGameResponse(storage: StorageGameType[], gameId: number
   };
 }
 
-export function checkIfGameIsFinished(storage: StorageGameType[], gameId: number) {
+export function checkIfGameIsFinished(game: StorageGameType) {
   let result = '';
-  const game = storage.find((game) => game.gameId === gameId);
   if (game.firstPlayerKilledShipsCounter === 10) {
     result = game.firstPlayerName;
     return result;

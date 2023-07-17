@@ -1,13 +1,11 @@
-import { RawData } from 'ws';
 import { ShotStatusType, ShotsType, StorageGameType } from '../types/storage';
 
 export default function updateGameStorageAfterAttack(
-  message: RawData,
-  storage: StorageGameType[]
+  x: number,
+  y: number,
+  indexPlayer: number,
+  game: StorageGameType
 ) {
-  const data = JSON.parse(JSON.parse(message.toString()).data);
-  const { x, y, gameId, indexPlayer } = data;
-  const game = storage.find((game) => game.gameId === gameId);
   game.temporaryAttackResults.length = 0;
   if (indexPlayer) {
     if (!game.secondPlayerShots[y][x]) {

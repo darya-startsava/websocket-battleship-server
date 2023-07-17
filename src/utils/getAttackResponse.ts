@@ -1,10 +1,11 @@
-import { RawData } from 'ws';
 import { ShotStatusType, StorageGameType } from '../types/storage';
 
-export default function getAttackResponse(message: RawData, result: ShotStatusType) {
-  const attackRequest = JSON.parse(JSON.parse(message.toString()).data);
-  console.log(attackRequest);
-  const { x, y, indexPlayer } = attackRequest;
+export default function getAttackResponse(
+  x: number,
+  y: number,
+  indexPlayer: number,
+  result: ShotStatusType
+) {
   console.log(
     'response:',
     'attack',
@@ -22,13 +23,10 @@ type AttackResponseType = {
 };
 
 export function getAdditionalResponsesIfKilled(
-  message: RawData,
-  storage: StorageGameType[]
+  indexPlayer: number,
+  game: StorageGameType
 ) {
   const responses: AttackResponseType[] = [];
-  const attackRequest = JSON.parse(JSON.parse(message.toString()).data);
-  const { gameId, indexPlayer } = attackRequest;
-  const game = storage.find((game) => game.gameId === gameId);
   const { temporaryAttackResults } = game;
   temporaryAttackResults.forEach((i) =>
     responses.push({

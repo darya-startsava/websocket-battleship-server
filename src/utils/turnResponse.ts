@@ -1,9 +1,7 @@
 import { StorageGameType } from '../types/storage';
 
-export default function turnResponse(store: StorageGameType[], gameId: number) {
-  const currentPlayer = store.find(
-    (game) => game.gameId === gameId
-  ).currentPlayerIndex;
+export default function turnResponse(game: StorageGameType) {
+  const currentPlayer = game.currentPlayerIndex;
   console.log('response:', 'turn', currentPlayer);
   const data = {
     currentPlayer,

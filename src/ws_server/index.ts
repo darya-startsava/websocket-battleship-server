@@ -24,6 +24,7 @@ import updateGameStorageAfterAttack from '../utils/updateGameStorageAfterAttack'
 import updateRoom from '../utils/updateRoom';
 import updateWinners, { updateWinnersStorage } from '../utils/updateWinners';
 import { checkIfGameIsFinished, getFinishGameResponse } from '../utils/finishGame';
+import { randomAttack } from '../utils/randomAttack';
 
 const webSocketServer = new WebSocketServer({ port: WS_PORT });
 
@@ -113,6 +114,9 @@ webSocketServer.on('connection', (socket) => {
       }
       case 'add_ships':
         const gameId = JSON.parse(JSON.parse(message.toString()).data).gameId;
+        const game = webSocketServerStorageGames.find(
+          (game) => game.gameId === gameId
+        );
         const areBothPlayersAddShips = addShipsToStore(
           message,
           webSocketServerStorageGames
@@ -123,9 +127,7 @@ webSocketServer.on('connection', (socket) => {
             gameId,
             0
           );
-          const firstPlayerName = webSocketServerStorageGames.find(
-            (game) => game.gameId === gameId
-          ).firstPlayerName;
+          const firstPlayerName = game.firstPlayerName;
           userSocketMap
             .get(firstPlayerName)
             .send(JSON.stringify(firstPlayerInRoomResponse));
@@ -134,19 +136,17 @@ webSocketServer.on('connection', (socket) => {
             gameId,
             1
           );
-          const secondPlayerName = webSocketServerStorageGames.find(
-            (game) => game.gameId === gameId
-          ).secondPlayerName;
+          const secondPlayerName = game.secondPlayerName;
           userSocketMap
             .get(secondPlayerName)
             .send(JSON.stringify(secondPlayerInRoomResponse));
-          const turn = turnResponse(webSocketServerStorageGames, gameId);
+          const turn = turnResponse(game);
           userSocketMap.get(firstPlayerName).send(JSON.stringify(turn));
           userSocketMap.get(secondPlayerName).send(JSON.stringify(turn));
         }
         break;
       case 'attack': {
-        const { gameId, indexPlayer } = JSON.parse(
+        const { x, y, gameId, indexPlayer } = JSON.parse(
           JSON.parse(message.toString()).data
         );
         const game = webSocketServerStorageGames.find(
@@ -156,36 +156,24 @@ webSocketServer.on('connection', (socket) => {
           console.log("it's not this player turn");
           break;
         }
-        const result = updateGameStorageAfterAttack(
-          message,
-          webSocketServerStorageGames
-        );
+        const result = updateGameStorageAfterAttack(x, y, indexPlayer, game);
         console.log('result:', result);
         const firstPlayerName = game.firstPlayerName;
         const secondPlayerName = game.secondPlayerName;
         if (result) {
-          const attackResponse = getAttackResponse(message, result);
+          const attackResponse = getAttackResponse(x, y, indexPlayer, result);
           userSocketMap.get(firstPlayerName).send(JSON.stringify(attackResponse));
           userSocketMap.get(secondPlayerName).send(JSON.stringify(attackResponse));
         }
         if (result === ShotStatusType.killed) {
-          const responses = getAdditionalResponsesIfKilled(
-            message,
-            webSocketServerStorageGames
-          );
+          const responses = getAdditionalResponsesIfKilled(indexPlayer, game);
           responses.forEach((response) => {
             userSocketMap.get(firstPlayerName).send(JSON.stringify(response));
             userSocketMap.get(secondPlayerName).send(JSON.stringify(response));
           });
-          const winnerName = checkIfGameIsFinished(
-            webSocketServerStorageGames,
-            gameId
-          );
+          const winnerName = checkIfGameIsFinished(game);
           if (winnerName) {
-            const finishGameResponse = getFinishGameResponse(
-              webSocketServerStorageGames,
-              gameId
-            );
+            const finishGameResponse = getFinishGameResponse(game);
             console.log('winner:', winnerName);
             userSocketMap
               .get(firstPlayerName)
@@ -210,9 +198,27 @@ webSocketServer.on('connection', (socket) => {
             game.currentPlayerIndex = 1;
           }
         }
-        const turn = turnResponse(webSocketServerStorageGames, gameId);
+        const turn = turnResponse(game);
         userSocketMap.get(firstPlayerName).send(JSON.stringify(turn));
         userSocketMap.get(secondPlayerName).send(JSON.stringify(turn));
+        break;
+      }
+      case 'randomAttack': {
+        const { gameId, indexPlayer } = JSON.parse(
+          JSON.parse(message.toString()).data
+        );
+        const game = webSocketServerStorageGames.find(
+          (game) => game.gameId === gameId
+        );
+        const firstPlayerName = game.firstPlayerName;
+        const secondPlayerName = game.secondPlayerName;
+        const randomAttackResponse = randomAttack(game, indexPlayer);
+        userSocketMap
+          .get(firstPlayerName)
+          .send(JSON.stringify(randomAttackResponse));
+        userSocketMap
+          .get(secondPlayerName)
+          .send(JSON.stringify(randomAttackResponse));
         break;
       }
     }
