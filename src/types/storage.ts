@@ -27,16 +27,16 @@ type ShipsType = {
   };
   direction: boolean;
   length: number;
-  type: ShipSize;
+  type: ShipSize | 'small' | 'medium' | 'large' | 'huge';
 };
 
-export enum ShotStatusType {
+enum ShotStatusType {
   miss = 'miss',
   killed = 'killed',
   shot = 'shot',
 }
 
-export type ShotsType = {
+type ShotsType = {
   x: number;
   y: number;
   status: ShotStatusType;
@@ -58,4 +58,12 @@ type StorageGameType = {
   temporaryAttackResults: ShotsType[];
 };
 
-export { StorageRoomsType, StorageWinnersType, StorageGameType, ShipsType };
+export {
+  StorageRoomsType,
+  StorageWinnersType,
+  StorageGameType,
+  ShipsType,
+  ShotStatusType,
+  ShotsType,
+  ShipSize,
+};

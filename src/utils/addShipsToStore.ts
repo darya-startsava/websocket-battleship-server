@@ -1,25 +1,24 @@
-import { RawData } from 'ws';
 import { StorageGameType, ShipsType } from '../types/storage';
 
-export default function addShipsToStore(message: RawData, store: StorageGameType[]) {
+export default function addShipsToStore(
+  indexPlayer: number,
+  ships: ShipsType[],
+  game: StorageGameType
+) {
   let areBothPlayersAddShips = false;
-  const playerShipsData = JSON.parse(JSON.parse(message.toString()).data);
-  store.forEach((game) => {
-    if (game.gameId === playerShipsData.gameId) {
-      if (playerShipsData.indexPlayer === 0) {
-        game.firstPlayerShips = playerShipsData.ships;
-        game.firstPlayerShipsMatrix = transformToMatrix(playerShipsData.ships);
-        game.firstPlayerShots = createMatrix();
-      } else {
-        game.secondPlayerShips = playerShipsData.ships;
-        game.secondPlayerShipsMatrix = transformToMatrix(playerShipsData.ships);
-        game.secondPlayerShots = createMatrix();
-      }
-      if (game.firstPlayerShips.length && game.firstPlayerShips.length) {
-        areBothPlayersAddShips = true;
-      }
-    }
-  });
+  if (indexPlayer === 0) {
+    game.firstPlayerShips = ships;
+    game.firstPlayerShipsMatrix = transformToMatrix(ships);
+    game.firstPlayerShots = createMatrix();
+  } else {
+    game.secondPlayerShips = ships;
+    game.secondPlayerShipsMatrix = transformToMatrix(ships);
+    game.secondPlayerShots = createMatrix();
+  }
+  if (game.firstPlayerShips.length && game.secondPlayerShips.length) {
+    areBothPlayersAddShips = true;
+  }
+
   return areBothPlayersAddShips;
 }
 

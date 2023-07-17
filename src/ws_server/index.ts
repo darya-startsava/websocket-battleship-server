@@ -26,6 +26,7 @@ import updateRoom from '../utils/updateRoom';
 import updateWinners, { updateWinnersStorage } from '../utils/updateWinners';
 import { checkIfGameIsFinished, getFinishGameResponse } from '../utils/finishGame';
 import randomAttack from '../utils/randomAttack';
+import getRandomBotShips from '../botShipsArray';
 
 const webSocketServer = new WebSocketServer({ port: WS_PORT });
 
@@ -50,7 +51,7 @@ webSocketServer.on('connection', (socket) => {
     game: StorageGameType
   ) {
     const result = updateGameStorageAfterAttack(x, y, indexPlayer, game);
-    console.log('result:', result);
+    console.log('result:', result || 'this field has already been attacked');
     const firstPlayerName = game.firstPlayerName;
     const secondPlayerName = game.secondPlayerName;
     if (result) {
@@ -89,6 +90,74 @@ webSocketServer.on('connection', (socket) => {
     const turn = turnResponse(game);
     userSocketMap.get(firstPlayerName).send(JSON.stringify(turn));
     userSocketMap.get(secondPlayerName).send(JSON.stringify(turn));
+  }
+
+  function attackResponsePlayWithBot(
+    x: number,
+    y: number,
+    indexPlayer: number,
+    game: StorageGameType
+  ) {
+    const result = updateGameStorageAfterAttack(x, y, indexPlayer, game);
+    console.log('result:', result || 'this field has already been attacked');
+    if (result) {
+      const attackResponse = getAttackResponse(x, y, indexPlayer, result);
+      socket.send(JSON.stringify(attackResponse));
+    }
+    if (result === ShotStatusType.killed) {
+      addAdditionalAttackResultsToStorage(indexPlayer, game);
+      const responses = getAdditionalResponsesIfKilled(indexPlayer, game);
+      responses.forEach((response) => {
+        socket.send(JSON.stringify(response));
+      });
+      const winnerName = checkIfGameIsFinished(game);
+      if (winnerName) {
+        const finishGameResponse = getFinishGameResponse(game);
+        console.log('winner:', winnerName);
+        socket.send(JSON.stringify(finishGameResponse));
+        updateWinnersStorage(webSocketServerStorageWinners, winnerName);
+        const updateWinnersResponse = updateWinners(webSocketServerStorageWinners);
+        sockets.forEach((socket) =>
+          socket.send(JSON.stringify(updateWinnersResponse))
+        );
+        return;
+      }
+    }
+    if (result === ShotStatusType.miss) {
+      botAttack(game);
+    }
+    const turn = turnResponse(game);
+    socket.send(JSON.stringify(turn));
+  }
+
+  function botAttack(game: StorageGameType) {
+    const [x, y] = randomAttack(game, 1);
+    const result = updateGameStorageAfterAttack(x, y, 1, game);
+    console.log('botAttack:', result);
+    if (result) {
+      const attackResponse = getAttackResponse(x, y, 1, result);
+      socket.send(JSON.stringify(attackResponse));
+    }
+    if (result === ShotStatusType.killed) {
+      addAdditionalAttackResultsToStorage(1, game);
+      const responses = getAdditionalResponsesIfKilled(1, game);
+      responses.forEach((response) => {
+        socket.send(JSON.stringify(response));
+      });
+      const winnerName = checkIfGameIsFinished(game);
+      if (winnerName) {
+        game.currentPlayerIndex = 1;
+        const finishGameResponse = getFinishGameResponse(game);
+        console.log('winner:', winnerName);
+        socket.send(JSON.stringify(finishGameResponse));
+        return;
+      }
+    }
+    if (result === ShotStatusType.killed || result === ShotStatusType.shot) {
+      botAttack(game);
+    }
+    const turn = turnResponse(game);
+    socket.send(JSON.stringify(turn));
   }
 
   let userName = '';
@@ -163,36 +232,42 @@ webSocketServer.on('connection', (socket) => {
         break;
       }
       case 'add_ships':
-        const gameId = JSON.parse(JSON.parse(message.toString()).data).gameId;
+        const playerShipsData = JSON.parse(JSON.parse(message.toString()).data);
+        const { gameId, indexPlayer, ships } = playerShipsData;
         const game = webSocketServerStorageGames.find(
           (game) => game.gameId === gameId
         );
-        const areBothPlayersAddShips = addShipsToStore(
-          message,
-          webSocketServerStorageGames
-        );
+        const areBothPlayersAddShips = addShipsToStore(indexPlayer, ships, game);
+        console.log('areBothPlayersAddShips', areBothPlayersAddShips);
         if (areBothPlayersAddShips) {
-          const firstPlayerInRoomResponse = startGame(
-            webSocketServerStorageGames,
-            gameId,
-            0
-          );
-          const firstPlayerName = game.firstPlayerName;
-          userSocketMap
-            .get(firstPlayerName)
-            .send(JSON.stringify(firstPlayerInRoomResponse));
-          const secondPlayerInRoomResponse = startGame(
-            webSocketServerStorageGames,
-            gameId,
-            1
-          );
-          const secondPlayerName = game.secondPlayerName;
-          userSocketMap
-            .get(secondPlayerName)
-            .send(JSON.stringify(secondPlayerInRoomResponse));
-          const turn = turnResponse(game);
-          userSocketMap.get(firstPlayerName).send(JSON.stringify(turn));
-          userSocketMap.get(secondPlayerName).send(JSON.stringify(turn));
+          if (game.secondPlayerName === 'BOT') {
+            const response = startGame(webSocketServerStorageGames, gameId, 0);
+            socket.send(JSON.stringify(response));
+            const turn = turnResponse(game);
+            socket.send(JSON.stringify(turn));
+          } else {
+            const firstPlayerInRoomResponse = startGame(
+              webSocketServerStorageGames,
+              gameId,
+              0
+            );
+            const firstPlayerName = game.firstPlayerName;
+            userSocketMap
+              .get(firstPlayerName)
+              .send(JSON.stringify(firstPlayerInRoomResponse));
+            const secondPlayerInRoomResponse = startGame(
+              webSocketServerStorageGames,
+              gameId,
+              1
+            );
+            const secondPlayerName = game.secondPlayerName;
+            userSocketMap
+              .get(secondPlayerName)
+              .send(JSON.stringify(secondPlayerInRoomResponse));
+            const turn = turnResponse(game);
+            userSocketMap.get(firstPlayerName).send(JSON.stringify(turn));
+            userSocketMap.get(secondPlayerName).send(JSON.stringify(turn));
+          }
         }
         break;
       case 'attack': {
@@ -206,7 +281,12 @@ webSocketServer.on('connection', (socket) => {
           console.log("it's not this player turn");
           break;
         }
-        attackResponse(x, y, indexPlayer, game);
+        if (game.secondPlayerName !== 'BOT') {
+          attackResponse(x, y, indexPlayer, game);
+        } else {
+          attackResponsePlayWithBot(x, y, indexPlayer, game);
+        }
+
         break;
       }
       case 'randomAttack': {
@@ -217,8 +297,24 @@ webSocketServer.on('connection', (socket) => {
           (game) => game.gameId === gameId
         );
         const [x, y] = randomAttack(game, indexPlayer);
-        attackResponse(x, y, indexPlayer, game);
+        if (game.secondPlayerName !== 'BOT') {
+          attackResponse(x, y, indexPlayer, game);
+        } else {
+          attackResponsePlayWithBot(x, y, indexPlayer, game);
+        }
         break;
+      }
+      case 'single_play': {
+        const idGame = getNewIdGame(webSocketServerStorageGames);
+        const game = webSocketServerStorageGames.find(
+          (game) => game.gameId === idGame
+        );
+        game.firstPlayerName = userName;
+        const playerResponse = createGame(idGame, 0);
+        socket.send(JSON.stringify(playerResponse));
+        game.secondPlayerName = 'BOT';
+        const botShips = getRandomBotShips();
+        addShipsToStore(1, botShips, game);
       }
     }
   });
