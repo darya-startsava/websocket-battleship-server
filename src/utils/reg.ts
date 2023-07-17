@@ -42,22 +42,10 @@ export default function reg(message: RawData) {
 function auth(userAuthData: UserAuthData, userRegResponseData: UserRegResponseData) {
   userRegResponseData.name = userAuthData.name;
   if (dataBase.find((user) => user.name === userAuthData.name)) {
-    if (
-      dataBase.find(
-        (user) =>
-          user.name === userAuthData.name && user.password === userAuthData.password
-      )
-    ) {
-      userRegResponseData.index = dataBase.findIndex(
-        (user) =>
-          user.name === userAuthData.name && user.password === userAuthData.password
-      );
-      return;
-    } else {
-      userRegResponseData.error = true;
-      userRegResponseData.errorText = 'wrong password';
-      return;
-    }
+    userRegResponseData.error = true;
+    userRegResponseData.errorText =
+      'User with this name is already in game. Choose another name';
+    return;
   }
   userRegResponseData.name = userAuthData.name;
   userRegResponseData.index = dataBase.length;
