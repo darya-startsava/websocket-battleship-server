@@ -22,20 +22,14 @@ import startGame from '../utils/startGame';
 import turnResponse from '../utils/turnResponse';
 import updateGameStorageAfterAttack from '../utils/updateGameStorageAfterAttack';
 import updateRoom from '../utils/updateRoom';
-import updateWinners from '../utils/updateWinners';
+import updateWinners, { updateWinnersStorage } from '../utils/updateWinners';
 import { checkIfGameIsFinished, getFinishGameResponse } from '../utils/finishGame';
 
 const webSocketServer = new WebSocketServer({ port: WS_PORT });
 
 const webSocketServerStorageRooms: StorageRoomsType[] = [];
 
-const webSocketServerStorageWinners: StorageWinnersType[] = [
-  // clear webSocketServerStorage
-  {
-    name: 'Winner!',
-    wins: 2,
-  },
-];
+const webSocketServerStorageWinners: StorageWinnersType[] = [];
 
 const webSocketServerStorageGames: StorageGameType[] = [];
 
@@ -192,12 +186,21 @@ webSocketServer.on('connection', (socket) => {
               webSocketServerStorageGames,
               gameId
             );
+            console.log('winner:', winnerName);
             userSocketMap
               .get(firstPlayerName)
               .send(JSON.stringify(finishGameResponse));
             userSocketMap
               .get(secondPlayerName)
               .send(JSON.stringify(finishGameResponse));
+            updateWinnersStorage(webSocketServerStorageWinners, winnerName);
+            const updateWinnersResponse = updateWinners(
+              webSocketServerStorageWinners
+            );
+            sockets.forEach((socket) =>
+              socket.send(JSON.stringify(updateWinnersResponse))
+            );
+            break;
           }
         }
         if (result === ShotStatusType.miss) {

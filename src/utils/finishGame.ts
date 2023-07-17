@@ -1,6 +1,7 @@
 import { StorageGameType } from '../types/storage';
 
 export function getFinishGameResponse(storage: StorageGameType[], gameId: number) {
+  console.log('response:', 'finish');
   const game = storage.find((game) => game.gameId === gameId);
   const data = {
     winPlayer: game.currentPlayerIndex,
