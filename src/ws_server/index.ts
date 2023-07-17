@@ -18,7 +18,9 @@ import createGame, {
 import getPlayerInRoomName from '../utils/getPlayerInRoomName';
 import getRoomIndex from '../utils/getRoomIndex';
 import reg from '../utils/reg';
-import removeRoomFromList from '../utils/removeRoomFromList';
+import removeRoomFromList, {
+  removeRoomFromListIfUserJoinAnotherGame,
+} from '../utils/removeRoomFromList';
 import startGame from '../utils/startGame';
 import turnResponse from '../utils/turnResponse';
 import updateGameStorageAfterAttack from '../utils/updateGameStorageAfterAttack';
@@ -213,7 +215,7 @@ webSocketServer.on('connection', (socket) => {
         if (firstPlayerInRoom === userName) {
           break;
         }
-        removeRoomFromList(webSocketServerStorageRooms, roomIndex);
+        removeRoomFromList(webSocketServerStorageRooms, roomIndex, userName);
         const updateRoomResponse = updateRoom(webSocketServerStorageRooms);
         sockets.forEach((socket) => socket.send(JSON.stringify(updateRoomResponse)));
         const idGame = getNewIdGame(webSocketServerStorageGames);
@@ -305,6 +307,12 @@ webSocketServer.on('connection', (socket) => {
         break;
       }
       case 'single_play': {
+        removeRoomFromListIfUserJoinAnotherGame(
+          webSocketServerStorageRooms,
+          userName
+        );
+        const updateRoomResponse = updateRoom(webSocketServerStorageRooms);
+        sockets.forEach((socket) => socket.send(JSON.stringify(updateRoomResponse)));
         const idGame = getNewIdGame(webSocketServerStorageGames);
         const game = webSocketServerStorageGames.find(
           (game) => game.gameId === idGame
